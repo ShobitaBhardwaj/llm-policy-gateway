@@ -1,0 +1,53 @@
+version: "2026-07-04"
+
+profiles:
+  default:
+    providers_allow:
+      - echo
+      - openai_compatible
+    input:
+      max_chars: 16000
+      redact_logs: true
+      block_prompt_injection: true
+      block_pii: true
+    output:
+      max_chars: 12000
+      block_toxicity: true
+      block_pii: true
+      topic_threshold: 0.10
+      require_citations: true
+      require_json_by_default: false
+    retry:
+      max_attempts: 1
+    fallback_message: "I can’t provide a safe answer for that request."
+    rules:
+      - id: never-discuss-competitors
+        phase: output
+        action: block
+        message: "Competitor discussion is not allowed."
+        match:
+          type: keyword
+          keywords:
+            - anthropic
+            - claude
+            - gemini
+            - copilot
+      - id: always-cite-sources
+        phase: output
+        action: require_citation
+        message: "Responses must cite sources."
+        match:
+          type: always
+      - id: block-medical-advice
+        phase: output
+        action: block
+        retryable: false
+        message: "Medical advice is not allowed."
+        match:
+          type: keyword
+          keywords:
+            - diagnosis
+            - prescribe
+            - dosage
+            - treatment plan
+            - medical advice
